@@ -46,7 +46,7 @@ void calculate_pqt(const Num &a, const Num &b, Num &P, Num &Q, Num &T){
 
 Num calculate_pi(size_t n_digits){
     double digits_per_iteration = 14.1816474627;
-    Num iterations = n_digits / digits_per_iteration + 1;
+    Num iterations = int(n_digits / digits_per_iteration + 1);
     iterations += 3;
     Num P, Q, T;
     calculate_pqt(0, iterations, P, Q, T);

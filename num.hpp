@@ -3,10 +3,12 @@
 #include <math.h>
 #include <stdint.h>
 #include <limits.h>
+#include <limits>
 
 #include <vector>
 #include <algorithm>
 #include <iostream>
+#include <type_traits>
 
 class Num {
 public:
@@ -97,12 +99,17 @@ public:
         return *this;
     }
 
-    Num(int i): neg(i < 0){
-        unsigned u = (i < 0) ? -(unsigned)i : (unsigned)i;
-        if (sizeof(u) <= word_bits()){
+    template<typename I, std::enable_if_t<std::is_integral_v<I>, bool> = true>
+    Num(I i) {
+        neg = std::is_signed_v<I> && i < 0;
+        using U = std::make_unsigned_t<I>;
+        U u = (i < 0) ? -U(i) : U(i);
+        if (sizeof(u) <= word_bits()) {
             if (u > 0) push_back(u);
-        }else{
-            for (; u; u >>= word_bits()) push_back(u);
+        } else {
+            for (; u; u >>= word_bits()) {
+                push_back(u);
+            }
         }
     }
 
@@ -593,17 +600,21 @@ public:
         return neg ? -d : d;
     }
 
-    bool can_convert_to_int(int *result){
-        if (*this < Num(INT_MIN) || *this > Num(INT_MAX)) return false;
+    template<typename I>
+    bool can_convert_to_integral(I* result) {
+        static_assert(std::is_integral_v<I>);
+        if (neg && std::is_unsigned_v<I>) return false;
+        if (*this < Num(std::numeric_limits<I>::min())) return false;
+        if (*this > Num(std::numeric_limits<I>::max())) return false;
 
-        unsigned temp = 0;
-
-        if (word_bits() >= sizeof(temp)*CHAR_BIT){
-            if (words.size() > 0){
+        using U = std::make_unsigned_t<I>;
+        U temp = 0;
+        if (word_bits() >= sizeof(temp) * CHAR_BIT) {
+            if (words.size() > 0) {
                 temp = (*this)[0];
             }
-        }else{
-            for (size_t i = words.size(); i --> 0;){
+        } else {
+            for (size_t i = words.size(); i--> 0;) {
                 temp <<= word_bits();
                 temp += (*this)[i];
             }
@@ -612,6 +623,9 @@ public:
         *result = neg ? -temp : temp;
 
         return true;
+    }
+    bool can_convert_to_int(int* result) {
+        return can_convert_to_integral<int>(result);
     }
 
     Num pow(size_t exponent) const {
