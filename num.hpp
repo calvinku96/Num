@@ -601,7 +601,7 @@ public:
     }
 
     template<typename I>
-    bool can_convert_to_integral(I* result) {
+    bool can_convert_to_integral(I* result) const {
         static_assert(std::is_integral_v<I>);
         if (neg && std::is_unsigned_v<I>) return false;
         if (*this < Num(std::numeric_limits<I>::min())) return false;
@@ -624,7 +624,7 @@ public:
 
         return true;
     }
-    bool can_convert_to_int(int* result) {
+    bool can_convert_to_int(int* result) const {
         return can_convert_to_integral<int>(result);
     }
 
